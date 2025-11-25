@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>辰溪AI至尊版 - 朋友专用</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            width: 200px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+        }
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+        .prediction-item {
+            background: #f8f9fa;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        .focus {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .exclude {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .loading {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 辰溪AI至尊版</h1>
+        <h3 style="text-align: center; color: #666;">辰总专属预测系统 - 朋友专用版</h3>
+        
+        <button class="btn" onclick="getPrediction()">🚀 开始预测</button>
+        
+        <div id="loading" class="loading" style="display: none;">
+            正在获取最新数据并分析中...
+        </div>
+        
+        <div id="result" class="result">
+            <!-- 预测结果会显示在这里 -->
+        </div>
+    </div>
+
+    <script>
+        async function getPrediction() {
+            const btn = document.querySelector('.btn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                // 调用你的API
+                const response = await fetch('/api/chenxi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        // 可以在这里传递数据，或者让服务器自己获取
+                        use_real_data: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayResult(data.data);
+                } else {
+                    result.innerHTML = `<div style="color: red; text-align: center;">❌ ${data.message}</div>`;
+                }
+                
+            } catch (error) {
+                result.innerHTML = `<div style="color: red; text-align: center;">❌ 网络错误: ${error.message}</div>`;
+            } finally {
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                btn.disabled = false;
+            }
+        }
+        
+        function displayResult(prediction) {
+            let html = `
+                <h2>📊 预测结果</h2>
+                <p><strong>🎯 算法版本:</strong> ${prediction.algorithm_version || '辰溪至尊版v3.0'}</p>
+                <p><strong>💎 综合置信度:</strong> ${prediction.overall_confidence}</p>
+                
+                <h3>📈 概率分析</h3>
+            `;
+            
+            // 显示概率
+            for (const [combo, info] of Object.entries(prediction.predictions)) {
+                const isFocus = prediction.recommendation.focus.includes(combo);
+                const isExclude = prediction.recommendation.exclude === combo;
+                
+                let className = 'prediction-item';
+                if (isFocus) className += ' focus';
+                if (isExclude) className += ' exclude';
+                
+                const focusMark = isFocus ? '🎯 ' : '';
+                const excludeMark = isExclude ? '❌ ' : '';
+                
+                html += `
+                    <div class="${className}">
+                        ${focusMark}${excludeMark}<strong>${combo}:</strong> ${info.percentage} (${info.confidence}置信度)
+                    </div>
+                `;
+            }
+            
+            // 显示推荐
+            const rec = prediction.recommendation;
+            html += `
+                <h3>💡 智能推荐</h3>
+                <div class="prediction-item focus">
+                    <strong>🎯 重点关注:</strong> ${rec.focus.join(', ')}
+                </div>
+            `;
+            
+            if (rec.exclude) {
+                html += `
+                    <div class="prediction-item exclude">
+                        <strong>❌ 建议排除:</strong> ${rec.exclude}
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="prediction-item">
+                    <strong>🛡️ 投资策略:</strong> ${rec.strategy}
+                </div>
+                <div class="prediction-item">
+                    <strong>⚠️ 风险等级:</strong> ${rec.risk_level}
+                </div>
+                <div class="prediction-item">
+                    <strong>🎲 预测和值:</strong> ${prediction.value_prediction}点
+                </div>
+                <div class="prediction-item">
+                    <strong>📅 预测时间:</strong> ${new Date(prediction.timestamp).toLocaleString()}
+                </div>
+            `;
+            
+            document.getElementById('result').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
